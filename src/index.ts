@@ -18,8 +18,8 @@ app.set('query parser', (s: any) => qs.parse(s, {allowDots: true}));
 app.disable('x-powered-by');
 
 // Render url.
-app.use(async (req, res, next) => {
-    console.log(req.query);
+app.use('/', async (req, res, next) => {
+    console.info('New query', req.query);
 
     try {
         if (!req.query.url || typeof req.query.url !== 'string') {

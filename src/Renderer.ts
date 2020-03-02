@@ -11,6 +11,11 @@ export default class Renderer {
     constructor({maxSimultaneousBrowsers, browserTimeout}: { maxSimultaneousBrowsers?: number, browserTimeout?: number }) {
         this.maxSimultaneousBrowsers = maxSimultaneousBrowsers || Renderer.DEFAULT_MAX_SIMULTANEOUS_BROWSERS;
         this.browserTimeout = browserTimeout || Renderer.DEFAULT_BROWSER_TIMEOUT;
+
+        console.info('New renderer', {
+            maxSimultaneousBrowsers: this.maxSimultaneousBrowsers,
+            browserTimeout: this.browserTimeout
+        })
     }
 
     public async takeScreenshot(options: ScreenshotOptionsComplete): Promise<Buffer> {
@@ -27,13 +32,23 @@ export default class Renderer {
             throw new Error(`There is more browser than max simultaneous browsers (${this.browsers.length}.${this.maxSimultaneousBrowsers})`);
         }
 
+        // check if at least one browser is available for screenshot
+        for (const browser of this.browsers) {
+            if(browser.isAvailableForScreenshot()){
+                return browser;
+            }
+        }
+
+        // else spawn a new browser if possible
         if (this.browsers.length < this.maxSimultaneousBrowsers) {
-            const newBrowser = new Browser({timeout: this.browserTimeout});
+            const id = Math.floor(Math.random() * 100) + 1;
+            console.debug(`Create a new Browser instance with id: ${id}`);
+            const newBrowser = new Browser({timeout: this.browserTimeout, id});
             this.browsers.push(newBrowser);
             return newBrowser;
         }
 
-        // else this.browsers.length === this.maxSimultaneousBrowsers
+        // else wait for an available browser
         const browserWaiters: Promise<Browser>[] = [];
 
         for (const browser of this.browsers) {
