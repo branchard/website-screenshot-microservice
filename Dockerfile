@@ -13,6 +13,7 @@ RUN echo @edge http://nl.alpinelinux.org/alpine/edge/community > /etc/apk/reposi
 
 # Installs needed packages
 RUN apk add --no-cache \
+    iputils@edge \
     libmagic@edge \
     nano@edge
 
@@ -47,8 +48,7 @@ WORKDIR /app
 
 EXPOSE 3000
 
-#ENV MAX_SIMULTANEOUS_BROWSERS=4
-#ENV BROWSER_TIMEOUT=10000
+#ENV MAX_CONCURRENCY=4
 
 CMD npm run start
 

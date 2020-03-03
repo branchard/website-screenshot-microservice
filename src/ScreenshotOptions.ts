@@ -6,7 +6,7 @@ type Complete<T> = {
 }
 
 type ScreenshotOptions = {
-    url: URL
+    url: string
     type?: 'png' | 'jpeg'
     quality?: number
     width?: number

@@ -24,9 +24,12 @@
     "@types/content-disposition": "^0.5.2",
     "@types/express": "^4.17.2",
     "@types/node": "^13.7.7",
+    "@types/ping": "^0.2.0",
     "@types/puppeteer-core": "^2.0.0",
     "@types/qs": "^6.9.1",
     "express": "^4.17.1",
+    "ping": "^0.2.2",
+    "puppeteer-cluster": "^0.19.0",
     "puppeteer-core": "^2.1.1",
     "qs": "^6.9.1",
     "typescript": "^3.8.3"

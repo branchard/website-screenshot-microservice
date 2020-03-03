@@ -1,16 +1,16 @@
 import * as express from 'express';
 import * as qs from 'qs';
-import {URL} from 'url';
+import * as ping from 'ping';
+import {URL, URLSearchParams} from 'url';
 import Renderer from './Renderer';
-import type {ScreenshotOptions, ScreenshotOptionsComplete} from "./ScreenshotOptions";
+import {ScreenshotOptions, ScreenshotOptionsComplete} from "./ScreenshotOptions";
 
 const PORT: number = Number(process.env.PORT || 3000);
 
 const app: express.Express = express();
 
 const renderer: Renderer = new Renderer({
-    maxSimultaneousBrowsers: process.env.MAX_SIMULTANEOUS_BROWSERS ? Number(process.env.MAX_SIMULTANEOUS_BROWSERS) : undefined,
-    browserTimeout: process.env.BROWSER_TIMEOUT ? Number(process.env.BROWSER_TIMEOUT) : undefined
+    maxConcurrency: process.env.MAX_CONCURRENCY ? Number(process.env.MAX_CONCURRENCY) : undefined
 });
 
 // Configure.
@@ -26,8 +26,27 @@ app.use(async (req, res, next) => {
             throw new Error('You must define an url');
         }
 
+        const url = new URL(req.query.url);
+
+        if(!(await ping.promise.probe(url.hostname)).alive){
+            throw new Error(`The host "${url.hostname}" is unreachable. ${JSON.stringify({
+                hash: url.hash,
+                host: url.host,
+                hostname: url.hostname,
+                href: url.href,
+                origin: url.origin,
+                password: url.password,
+                pathname: url.pathname,
+                port: url.port,
+                protocol: url.protocol,
+                search: url.search,
+                searchParams: url.searchParams,
+                username: url.username,
+            })}`);
+        }
+
         const options: ScreenshotOptions = {
-            url: new URL(req.query.url)
+            url: req.query.url
         };
 
         if (req.query.type) {

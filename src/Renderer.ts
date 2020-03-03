@@ -1,60 +1,87 @@
-import Browser from "./Browser";
-import type {ScreenshotOptionsComplete} from "./ScreenshotOptions";
+import {Cluster} from 'puppeteer-cluster';
+import {ScreenshotOptionsComplete} from "./ScreenshotOptions";
+import * as puppeteer from 'puppeteer-core';
+import {promisify} from 'util';
+
+const sleep = promisify(setTimeout);
 
 export default class Renderer {
-    private static DEFAULT_MAX_SIMULTANEOUS_BROWSERS: number = 4;
-    private static DEFAULT_BROWSER_TIMEOUT: number = 60_000; // the time before an IDLE browser is destroyed
-    private readonly maxSimultaneousBrowsers: number;
-    private readonly browserTimeout: number;
-    private readonly browsers: Browser[] = [];
+    private static DEFAULT_MAX_CONCURRENCY: number = 4;
+    private readonly clusterCreationPromise: Promise<Cluster<ScreenshotOptionsComplete, Buffer>>;
 
-    constructor({maxSimultaneousBrowsers, browserTimeout}: { maxSimultaneousBrowsers?: number, browserTimeout?: number }) {
-        this.maxSimultaneousBrowsers = maxSimultaneousBrowsers || Renderer.DEFAULT_MAX_SIMULTANEOUS_BROWSERS;
-        this.browserTimeout = browserTimeout || Renderer.DEFAULT_BROWSER_TIMEOUT;
+    constructor(options: { maxConcurrency?: number }) {
+        const maxConcurrency = options.maxConcurrency || Renderer.DEFAULT_MAX_CONCURRENCY;
 
         console.info('New renderer', {
-            maxSimultaneousBrowsers: this.maxSimultaneousBrowsers,
-            browserTimeout: this.browserTimeout
-        })
+            maxConcurrency
+        });
+
+        this.clusterCreationPromise = new Promise(async (resolve, reject) => {
+            try {
+                const cluster: Cluster<ScreenshotOptionsComplete, Buffer> = await Cluster.launch({
+                    concurrency: Cluster.CONCURRENCY_CONTEXT,
+                    maxConcurrency: maxConcurrency,
+                    // timeout: this.browserTimeout,
+                    skipDuplicateUrls: false,
+                    puppeteer,
+                    puppeteerOptions: {
+                        executablePath: 'chromium-browser',
+                        ignoreHTTPSErrors: true,
+                        headless: true,
+                        args: [
+                            '--no-sandbox',
+                            '--disable-setuid-sandbox',
+                            '--disable-web-security', // Don't enforce the same-origin policy.
+                            '--disable-dev-shm-usage', // The /dev/shm partition is too small in certain VM environments, causing Chrome to fail or crash (see http://crbug.com/715363). Use this flag to work-around this issue (a temporary directory will always be used to create anonymous shared memory files).
+                            '--disable-dinosaur-easter-egg',
+                            '--disable-auto-reload', // Disable auto-reload of error pages.
+                            '--disable-gpu', // Disables GPU hardware acceleration. If software renderer is not in place, then the GPU process won't launch.
+                            '--no-zygote' // Disables the use of a zygote process for forking child processes. Instead, child processes will be forked and exec'd directly. Note that --no-sandbox should also be used together with this flag because the sandbox needs the zygote to work.
+                        ]
+                    },
+                });
+
+                await cluster.task(async ({page, data: options}: { page: puppeteer.Page, data: ScreenshotOptionsComplete }) => {
+                    console.log('New screenshot task: ', options);
+
+                    await page.goto(options.url, {
+                        timeout: options.timeout,
+                        waitUntil: options.waitUntil,
+                    });
+
+                    await page.setViewport({
+                        width: options.width,
+                        height: options.height,
+                    });
+
+                    // wait n sec to be sur the website is fully rendered
+                    await sleep(options.wait);
+
+                    const buffer: Buffer = await page.screenshot({
+                        type: options.type,
+                        quality: options.quality,
+                        fullPage: options.fullPage
+                    });
+
+                    await page.close();
+
+                    console.log('Screenshot done.');
+                    return buffer;
+                });
+
+                resolve(cluster);
+            } catch (e) {
+                reject(`Unable to create the renderer cluster.\n${JSON.stringify(e)}`);
+            }
+        });
     }
 
     public async takeScreenshot(options: ScreenshotOptionsComplete): Promise<Buffer> {
         try {
-            const availableBrowser: Browser = await this.getOneAvailableBrowser();
-            return await availableBrowser.takeScreenshot(options);
+            const cluster = await this.clusterCreationPromise;
+            return await cluster.execute(options);
         } catch (e) {
             throw e;
         }
-    }
-
-    private async getOneAvailableBrowser(options = {}): Promise<Browser> {
-        if (this.browsers.length > this.maxSimultaneousBrowsers) {
-            throw new Error(`There is more browser than max simultaneous browsers (${this.browsers.length}.${this.maxSimultaneousBrowsers})`);
-        }
-
-        // check if at least one browser is available for screenshot
-        for (const browser of this.browsers) {
-            if(browser.isAvailableForScreenshot()){
-                return browser;
-            }
-        }
-
-        // else spawn a new browser if possible
-        if (this.browsers.length < this.maxSimultaneousBrowsers) {
-            const id = Math.floor(Math.random() * 100) + 1;
-            console.debug(`Create a new Browser instance with id: ${id}`);
-            const newBrowser = new Browser({timeout: this.browserTimeout, id});
-            this.browsers.push(newBrowser);
-            return newBrowser;
-        }
-
-        // else wait for an available browser
-        const browserWaiters: Promise<Browser>[] = [];
-
-        for (const browser of this.browsers) {
-            browserWaiters.push(browser.awaitForScreenshot());
-        }
-
-        return await Promise.race(browserWaiters);
     }
 }
