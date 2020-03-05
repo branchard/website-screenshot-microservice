@@ -1,7 +1,5 @@
 import * as express from 'express';
 import * as qs from 'qs';
-import * as ping from 'ping';
-import {URL, URLSearchParams} from 'url';
 import Renderer from './Renderer';
 import {ScreenshotOptions, ScreenshotOptionsComplete} from "./ScreenshotOptions";
 
@@ -24,25 +22,6 @@ app.use(async (req, res, next) => {
     try {
         if (!req.query.url || typeof req.query.url !== 'string') {
             throw new Error('You must define an url');
-        }
-
-        const url = new URL(req.query.url);
-
-        if(!(await ping.promise.probe(url.hostname)).alive){
-            throw new Error(`The host "${url.hostname}" is unreachable. ${JSON.stringify({
-                hash: url.hash,
-                host: url.host,
-                hostname: url.hostname,
-                href: url.href,
-                origin: url.origin,
-                password: url.password,
-                pathname: url.pathname,
-                port: url.port,
-                protocol: url.protocol,
-                search: url.search,
-                searchParams: url.searchParams,
-                username: url.username,
-            })}`);
         }
 
         const options: ScreenshotOptions = {
