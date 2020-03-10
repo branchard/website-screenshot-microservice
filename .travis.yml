@@ -1,0 +1,7 @@
+services:
+  - docker
+
+script:
+  - docker build --no-cache --force-rm -t website-screenshot-microservice .
+  - id=$(docker run -t -d -p 1084:3000 website-screenshot-microservice)
+  - docker inspect -f {{.State.Running}} $id
