@@ -1,5 +1,4 @@
 import type * as puppeteer from 'puppeteer-core';
-import type {URL} from 'url';
 
 type Complete<T> = {
     [K in keyof T]-?: T[K];

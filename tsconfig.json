@@ -1,28 +1,32 @@
 {
-    "compilerOptions": {
-        "moduleResolution": "node",
-        "module": "CommonJS",
-        "target": "es2018",
-        "lib": ["es2018", "dom"],
-        "strict": true,
-        "sourceMap": false,
-        "declaration": false,
-        "experimentalDecorators": false,
-        "emitDecoratorMetadata": false,
-        "noImplicitAny": true,
-        "removeComments": true,
-        "allowJs": false,
-        "noEmit": false,
-        "downlevelIteration": true,
-        "typeRoots": [
-            "./node_modules/@types"
-        ],
-        "outDir": "build"
-    },
-    "include": [
-        "src/**/*.ts"
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "module": "CommonJS",
+    "target": "es2018",
+    "lib": [
+      "es2018",
+      "dom"
     ],
-    "exclude": [
-        "node_modules"
-    ]
+    "strict": true,
+    "sourceMap": false,
+    "declaration": false,
+    "experimentalDecorators": false,
+    "emitDecoratorMetadata": false,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "allowJs": false,
+    "noEmit": false,
+    "downlevelIteration": true,
+    "types": [
+      "node",
+      "jest"
+    ],
+    "outDir": "build"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

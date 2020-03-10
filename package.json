@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node build/index.js",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "./node_modules/.bin/jest"
   },
   "repository": {
     "type": "git",
@@ -21,16 +22,47 @@
   },
   "homepage": "https://github.com/branchard/website-screenshot-microservice#readme",
   "dependencies": {
+    "express": "^4.17.1",
+    "puppeteer-cluster": "^0.19.0",
+    "puppeteer-core": "^2.1.1",
+    "qs": "^6.9.1"
+  },
+  "devDependencies": {
     "@types/content-disposition": "^0.5.2",
     "@types/express": "^4.17.2",
+    "@types/jest": "^25.1.4",
     "@types/node": "^13.7.7",
     "@types/ping": "^0.2.0",
     "@types/puppeteer-core": "^2.0.0",
     "@types/qs": "^6.9.1",
-    "express": "^4.17.1",
-    "puppeteer-cluster": "^0.19.0",
-    "puppeteer-core": "^2.1.1",
-    "qs": "^6.9.1",
+    "@types/supertest": "^2.0.8",
+    "file-type": "^14.1.3",
+    "image-size": "^0.8.3",
+    "jest": "^25.1.0",
+    "supertest": "^4.0.2",
+    "ts-jest": "^25.2.1",
     "typescript": "^3.8.3"
+  },
+  "jest": {
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/_config/setup.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.ts"
+    ],
+    "coverageReporters": [
+      "lcov",
+      "text",
+      "text-summary"
+    ],
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "/test/.*\\.test\\.ts$",
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ]
   }
 }

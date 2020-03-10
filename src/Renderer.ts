@@ -1,13 +1,15 @@
 import {Cluster} from 'puppeteer-cluster';
 import {ScreenshotOptionsComplete} from "./ScreenshotOptions";
 import * as puppeteer from 'puppeteer-core';
-import {promisify} from 'util';
 
-const sleep = promisify(setTimeout);
+function sleep(ms: number): Promise<NodeJS.Timeout> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export default class Renderer {
     private static DEFAULT_MAX_CONCURRENCY: number = 4;
     private readonly clusterCreationPromise: Promise<Cluster<ScreenshotOptionsComplete, Buffer>>;
+    private closed: boolean = false;
 
     constructor(options: { maxConcurrency?: number }) {
         const maxConcurrency = options.maxConcurrency || Renderer.DEFAULT_MAX_CONCURRENCY;
@@ -25,7 +27,7 @@ export default class Renderer {
                     skipDuplicateUrls: false,
                     puppeteer,
                     puppeteerOptions: {
-                        executablePath: 'google-chrome-stable',
+                        executablePath: 'chromium-browser',
                         ignoreHTTPSErrors: true,
                         headless: true,
                         args: [
@@ -83,23 +85,35 @@ export default class Renderer {
 
                     await page.close();
 
-                    console.log('Screenshot done.');
                     return buffer;
                 });
 
                 resolve(cluster);
             } catch (e) {
-                reject(`Unable to create the renderer cluster.\n${JSON.stringify(e)}`);
+                console.error('Unable to create the renderer cluster.', e);
+                process.exit(1);
             }
         });
     }
 
     public async takeScreenshot(options: ScreenshotOptionsComplete): Promise<Buffer> {
+        if (this.closed) {
+            throw new Error('You cannot call takeScreenshot on a renderer that is closed.');
+        }
         try {
             const cluster = await this.clusterCreationPromise;
             return await cluster.execute(options);
         } catch (e) {
             throw e;
         }
+    }
+
+    public async close() {
+        if (this.closed) {
+            throw new Error('You cannot close a renderer that is already closed.');
+        }
+        const cluster = await this.clusterCreationPromise;
+        await cluster.close();
+        this.closed = true;
     }
 }
