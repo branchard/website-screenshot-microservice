@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/branchard/website-screenshot-microservice.svg?branch=master)](https://travis-ci.org/branchard/website-screenshot-microservice)
 # Website screenshot microservice
 The simplest way to take screenshots of websites with a [Docker](https://www.docker.com/) container.
 
